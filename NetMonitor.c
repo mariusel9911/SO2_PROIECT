@@ -58,6 +58,7 @@ int main(){
     while (!killed) {
         num_connections = get_tcp_connections(connections, MAX_CONNECTIONS);
         num_connections += get_udp_connections(&connections[num_connections], MAX_CONNECTIONS);
+        num_connections += get_icmp_connections(&connections[num_connections], MAX_CONNECTIONS);
         update_table(table_win, connections, num_connections, start_row);
         draw_footer(footer_win, tx, rx, total);
 

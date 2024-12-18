@@ -74,3 +74,34 @@ int get_udp_connections(connection_t *connections, int max_connections) {
     fclose(fp);
     return count;
 }
+
+int get_icmp_connections(connection_t *connections, int max_connections) {
+
+    FILE *fp = fopen("/proc/net/icmp", "r");
+    if (fp == NULL) {
+        perror("Unable to open /proc/net/icmp");
+        return -1;
+    }
+
+    char line[MAX_LINE_LENGTH];
+    int count = 0;
+
+    fgets(line, sizeof(line) - 1, fp); 
+    
+    while (fgets(line, sizeof(line) - 1, fp) != NULL && count < max_connections) {
+
+        unsigned long local_ip, remote_ip;
+
+        sscanf(line, "%*d: %lx:%hx %lx:%hx %*x %*x %*x %*x %*d %*d",
+               &local_ip, &connections[count].sport, &remote_ip, &connections[count].dport);
+
+        hex_to_ip(local_ip, connections[count].src_ip);
+        hex_to_ip(remote_ip, connections[count].dst_ip);
+        strncpy(connections[count].protocol,"ICMP", 5);
+
+        count++;
+    }
+
+    fclose(fp);
+    return count;
+}

@@ -17,6 +17,7 @@ typedef struct connection_t {
 
 int get_tcp_connections(connection_t *connections, int max_connections);
 int get_udp_connections(connection_t *connections, int max_connections);
+int get_icmp_connections(connection_t *connections, int max_connections);
 void hex_to_ip(int hex_ip_addr, char *str_addr);
 
 #endif
