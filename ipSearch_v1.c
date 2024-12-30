@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <stdint.h>
+#include <dirent.h>
 
 #define MAX_LINE_LENGTH 512
 
@@ -105,3 +107,138 @@ int get_icmp_connections(connection_t *connections, int max_connections) {
     fclose(fp);
     return count;
 }
+
+char **get_interfaces(int *found_interfaces, int *allocated_interfaces){
+
+    // Alloc dynamic array of string interfaces array
+
+    *found_interfaces = 0;
+    uint16_t max_interfaces = 32;
+    uint16_t max_interface_name = 64;
+
+    char **str = (char **)malloc(max_interfaces * sizeof(char *));
+
+    if (!str){
+        fprintf(stderr, "ouf of mem\n");
+        return NULL;
+    }
+
+    for(int i = 0; i < max_interfaces; i++){
+        str[i] = (char *)malloc(max_interface_name * sizeof(char));
+
+        if (!str[i]){
+            fprintf(stderr, "ouf of mem\n");
+            for(int j = 0; j < i; j++){
+                free(str[j]);
+            }
+            free(str);
+            return NULL;
+        }
+
+    }
+
+    // Search for interfaces in /sys/class/net
+
+    char interfaces_path[] = "/sys/class/net";
+
+    DIR *dir = opendir(interfaces_path);
+
+    if (!dir){
+        for(int i = 0; i < max_interfaces; i++) free(str[i]);
+        free(str);
+        return NULL;
+    }
+
+    struct dirent *entry;
+
+    while((entry = readdir(dir)) != NULL){
+
+        if (*found_interfaces == max_interfaces){
+            max_interfaces = max_interfaces * 2;
+
+            char **tmp = (char **)realloc(str, max_interfaces * sizeof(char *));
+
+            if(!tmp){
+                for(int i = 0; i < *found_interfaces; i++) free(str[i]);
+                free(str);
+                closedir(dir);
+                return NULL;
+            }
+
+            str = tmp;
+        }
+
+        if (strcmp(entry->d_name,".") == 0 || strcmp(entry->d_name,"..") == 0 ) continue;
+
+        strncpy(str[(*found_interfaces)++],entry->d_name, max_interface_name - 1);
+    }
+
+    *allocated_interfaces = max_interfaces;
+    closedir(dir);
+
+    return str;
+}
+
+interface_stat_t *get_interface_statistics(char *interface_name){
+
+    static interface_stat_t statistics;
+
+    statistics.rx_bytes = 0;
+    statistics.tx_bytes = 0;
+
+    char interface_rx_bytes[128];
+    char interface_tx_bytes[128];
+
+    snprintf(interface_rx_bytes, sizeof(interface_rx_bytes)-1, "/sys/class/net/%s/statistics/rx_bytes", interface_name);
+    snprintf(interface_tx_bytes, sizeof(interface_tx_bytes)-1, "/sys/class/net/%s/statistics/tx_bytes", interface_name);
+
+    FILE *rx_fp = fopen(interface_rx_bytes, "r");
+    if (!rx_fp) {
+        fprintf(stderr, "Error: Unable to open %s\n", interface_rx_bytes);
+        return NULL;
+    }
+
+    FILE *tx_fp = fopen(interface_tx_bytes, "r");
+    if (!tx_fp) {
+        fprintf(stderr, "Error: Unable to open %s\n", interface_tx_bytes);
+        fclose(rx_fp);
+        return NULL;
+    }
+
+    if (fscanf(rx_fp, "%llu", &statistics.rx_bytes) != 1) {
+        fclose(rx_fp);
+        fclose(tx_fp);
+        return NULL;
+    }
+
+    if (fscanf(tx_fp, "%llu", &statistics.tx_bytes) != 1) {
+        fclose(rx_fp);
+        fclose(tx_fp);
+        return NULL;
+    }
+
+    fclose(rx_fp);
+    fclose(tx_fp);
+
+    return &statistics;   
+}
+
+
+interface_stat_t calculate_interface_bytes(interface_stat_t *interface, interface_stat_t *last_interface){
+
+    interface_stat_t result;
+    memset(&result, 0, sizeof(interface_stat_t)); 
+    
+    if (interface->rx_bytes - last_interface->rx_bytes > 0){
+        result.rx_bytes = interface->rx_bytes - last_interface->rx_bytes;
+    }
+
+    if (interface->tx_bytes - last_interface->tx_bytes > 0){
+        result.tx_bytes = interface->tx_bytes - last_interface->tx_bytes;
+    }
+
+    result.total = result.rx_bytes + result.tx_bytes;
+    return result;
+
+}
+

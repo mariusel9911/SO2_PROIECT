@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g
-LDFLAGS = -lncurses
+LDFLAGS = -lncurses -lmenu
 
 TARGET = NetMonitor
 SRCS = NetMonitor.c ui.c ipSearch_v1.c
