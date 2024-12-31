@@ -40,8 +40,6 @@ int main(){
     getmaxyx(stdscr, height, width);
     verify_terminal_size(height, width);
     
-    // unsigned long tx = 0, rx = 0, total = 0;
-    
     WINDOW *interfaces_win = newwin(height/2, width/2, height/4, width/4);
     char *selected_interface = interfaces_menu(interfaces_win);
 
@@ -55,10 +53,10 @@ int main(){
     }
 
 
-    WINDOW *table_win = newwin(height - 7, 110, 2, 2);
+    WINDOW *table_win = newwin(height - 7, 106, 2, 2);
     box(table_win, 0, 0);
 
-    WINDOW *footer_win = newwin(5, 110, height - 5, 2);
+    WINDOW *footer_win = newwin(5, 106, height - 5, 2);
     box(footer_win, 0, 0);
     refresh();
     getch();
@@ -99,8 +97,6 @@ int main(){
 
         result = calculate_interface_bytes(&curr_interface, &last_interface);
         rate = calculate_interface_rate(&curr_interface, &last_interface, 1);
-
-        // curr_interface = last_interface;
 
         update_table(table_win, connections, num_connections, start_row);
         draw_footer(footer_win, result.rx_bytes, result.tx_bytes, result.total, selected_interface, rate);

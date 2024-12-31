@@ -81,7 +81,7 @@ void draw_table(WINDOW *win) {
     mvwprintw(win, 1, 62, "Bytes");
     mvwprintw(win, 1, 77, "Protocol");
     mvwprintw(win, 1, 92, "Rate");
-    mvwhline(win, 2, 1, ACS_HLINE, 108);
+    mvwhline(win, 2, 1, ACS_HLINE, 104);
 }
 
 
@@ -123,8 +123,8 @@ void draw_footer(WINDOW *footer_win, unsigned long long rx_bytes, unsigned long 
     format_bytes(tx, tx_str, sizeof(tx_str));
     format_bytes(Total, total_str, sizeof(total_str));
 
-    format_bytes(rate.rx_rate, rx_rate, sizeof(rx_rate));
-    format_bytes(rate.tx_rate, tx_rate, sizeof(tx_rate));
+    format_rate(rate.rx_rate, rx_rate, sizeof(rx_rate));
+    format_rate(rate.tx_rate, tx_rate, sizeof(tx_rate));
 
     werase(footer_win);
     box(footer_win, 0, 0);
@@ -133,8 +133,8 @@ void draw_footer(WINDOW *footer_win, unsigned long long rx_bytes, unsigned long 
     mvwprintw(footer_win, 2, 2, "TX: %s", tx_str);
     mvwprintw(footer_win, 3, 2, "Total: %s", total_str);
 
-    mvwprintw(footer_win, 1, 32, "%s/s", rx_rate); // Rx rate
-    mvwprintw(footer_win, 2, 32, "%s/s", tx_rate); // Rx rate
+    mvwprintw(footer_win, 1, 32, "%s", rx_rate); // Rx rate
+    mvwprintw(footer_win, 2, 32, "%s", tx_rate); // Tx rate
 
     mvwprintw(footer_win, 1, 70 ,"Interface:%s", interface_name);
     mvwprintw(footer_win, 3, 70, "PRESS Q TO EXIT...");
@@ -154,6 +154,19 @@ void verify_terminal_size(int height, int width){
 
 void format_bytes(unsigned long long bytes, char *output, size_t output_size) {
     const char *units[] = {"B", "kB", "MB", "GB", "TB", "PB", "EB", "YB", "ZB"};
+    int unit_index = 0;
+    long double scaled_value = (long double)bytes;
+
+    while (scaled_value >= 1024 && unit_index < 9) {
+        scaled_value /= 1024.0;
+        unit_index++;
+    }
+
+    snprintf(output, output_size, "%.2Lf %s", scaled_value, units[unit_index]);
+}
+
+void format_rate(unsigned long long bytes, char *output, size_t output_size) {
+    const char *units[] = {"bps", "kbps", "Mbps", "Gbps", "Tbps", "Pbps", "Ebps", "Ybps", "Zbps"};
     int unit_index = 0;
     long double scaled_value = (long double)bytes;
 

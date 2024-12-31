@@ -10,5 +10,6 @@ void draw_footer(WINDOW *footer_win, unsigned long long rx_bytes, unsigned long 
 void verify_terminal_size(int height, int width);
 char *interfaces_menu(WINDOW *win);
 void format_bytes(unsigned long long bytes, char *output, size_t output_size);
+void format_rate(unsigned long long bytes, char *output, size_t output_size);
 
 #endif // UI_H
