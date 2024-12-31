@@ -33,8 +33,8 @@ int get_tcp_connections(connection_t *connections, int max_connections) {
 
         unsigned long local_ip, remote_ip;
 
-        sscanf(line, "%*d: %lx:%hx %lx:%hx %*x %*x %*x %*x %*d %*d",
-               &local_ip, &connections[count].sport, &remote_ip, &connections[count].dport);
+        sscanf(line, "%*d: %lx:%hx %lx:%hx %*x %*x %*x %*x %*d %*d %llu",
+               &local_ip, &connections[count].sport, &remote_ip, &connections[count].dport, &connections[count].bytes);
 
         hex_to_ip(local_ip, connections[count].src_ip);
         hex_to_ip(remote_ip, connections[count].dst_ip);
@@ -63,8 +63,8 @@ int get_udp_connections(connection_t *connections, int max_connections) {
     while (fgets(line, sizeof(line) - 1, fp) != NULL && count < max_connections) {
         unsigned long local_ip, remote_ip;
 
-        sscanf(line, "%*d: %lx:%hx %lx:%hx %*x %*x %*x %*x %*d %*d",
-               &local_ip, &connections[count].sport, &remote_ip, &connections[count].dport);
+        sscanf(line, "%*d: %lx:%hx %lx:%hx %*x %*x %*x %*x %*d %*d %llu",
+               &local_ip, &connections[count].sport, &remote_ip, &connections[count].dport, &connections[count].bytes);
 
         hex_to_ip(local_ip, connections[count].src_ip);
         hex_to_ip(remote_ip, connections[count].dst_ip);
@@ -94,8 +94,8 @@ int get_icmp_connections(connection_t *connections, int max_connections) {
 
         unsigned long local_ip, remote_ip;
 
-        sscanf(line, "%*d: %lx:%hx %lx:%hx %*x %*x %*x %*x %*d %*d",
-               &local_ip, &connections[count].sport, &remote_ip, &connections[count].dport);
+        sscanf(line, "%*d: %lx:%hx %lx:%hx %*x %*x %*x %*x %*d %*d %llu",
+               &local_ip, &connections[count].sport, &remote_ip, &connections[count].dport, &connections[count].bytes);
 
         hex_to_ip(local_ip, connections[count].src_ip);
         hex_to_ip(remote_ip, connections[count].dst_ip);
@@ -240,5 +240,28 @@ interface_stat_t calculate_interface_bytes(interface_stat_t *interface, interfac
     result.total = result.rx_bytes + result.tx_bytes;
     return result;
 
+}
+
+interface_rate calculate_interface_rate(interface_stat_t *interface, interface_stat_t *last_interface, double interval){
+
+    interface_rate result;
+    memset(&result, 0, sizeof(interface_rate));
+
+    unsigned long long rx_diff = interface->rx_bytes - last_interface->rx_bytes;
+    unsigned long long tx_diff = interface->tx_bytes - last_interface->tx_bytes;
+
+    if (rx_diff > 0) {
+        result.rx_rate = ((double)rx_diff * 8.0) / interval;
+    } else {
+        result.rx_rate = 0.0;
+    }
+
+    if (tx_diff > 0) {
+        result.tx_rate = ((double)tx_diff * 8.0) / interval;
+    } else {
+        result.tx_rate = 0.0;
+    }
+
+    return result;
 }
 

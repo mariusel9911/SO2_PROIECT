@@ -13,6 +13,7 @@
 uint8_t killed = 0;
 
 void sa_sigTERM_handler(int numsig){
+    (void)numsig;
     killed = 1;
 }
 
@@ -54,10 +55,10 @@ int main(){
     }
 
 
-    WINDOW *table_win = newwin(height - 7, 100, 2, 2);
+    WINDOW *table_win = newwin(height - 7, 110, 2, 2);
     box(table_win, 0, 0);
 
-    WINDOW *footer_win = newwin(5, 100, height - 5, 2);
+    WINDOW *footer_win = newwin(5, 110, height - 5, 2);
     box(footer_win, 0, 0);
     refresh();
     getch();
@@ -69,6 +70,8 @@ int main(){
     interface_stat_t curr_interface;
     interface_stat_t result;
 
+    interface_rate rate;
+
     int num_connections = 0, start_row = 0;
     int max_visible_rows = height - 10;
     int ch;
@@ -79,8 +82,8 @@ int main(){
     req.tv_nsec = 1e8L;
 
     interface = get_interface_statistics(selected_interface);
-    last_interface.rx_bytes = interface->rx_bytes;
-    last_interface.tx_bytes = interface->tx_bytes;
+    curr_interface.rx_bytes = interface->rx_bytes;
+    curr_interface.tx_bytes = interface->tx_bytes;
 
     while (!killed) {
 
@@ -88,16 +91,19 @@ int main(){
         num_connections += get_udp_connections(&connections[num_connections], MAX_CONNECTIONS);
         num_connections += get_icmp_connections(&connections[num_connections], MAX_CONNECTIONS);
         
+        last_interface = curr_interface;
+
         interface = get_interface_statistics(selected_interface);
         curr_interface.rx_bytes = interface->rx_bytes;
         curr_interface.tx_bytes = interface->tx_bytes;
 
         result = calculate_interface_bytes(&curr_interface, &last_interface);
-        curr_interface = last_interface;
+        rate = calculate_interface_rate(&curr_interface, &last_interface, 1);
 
+        // curr_interface = last_interface;
 
         update_table(table_win, connections, num_connections, start_row);
-        draw_footer(footer_win, result.rx_bytes, result.tx_bytes, result.total, selected_interface);
+        draw_footer(footer_win, result.rx_bytes, result.tx_bytes, result.total, selected_interface, rate);
 
         memset(&connections, 0, MAX_CONNECTIONS * sizeof(connection_t));
 

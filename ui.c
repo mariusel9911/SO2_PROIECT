@@ -76,12 +76,12 @@ end_menu:
 
 
 void draw_table(WINDOW *win) {
-    mvwprintw(win, 1, 2, "IP Source");
-    mvwprintw(win, 1, 32, "IP Destination");
+    mvwprintw(win, 1, 2, "Local Address");
+    mvwprintw(win, 1, 32, "Foreign Address");
     mvwprintw(win, 1, 62, "Bytes");
     mvwprintw(win, 1, 77, "Protocol");
     mvwprintw(win, 1, 92, "Rate");
-    mvwhline(win, 2, 1, ACS_HLINE, 98);
+    mvwhline(win, 2, 1, ACS_HLINE, 108);
 }
 
 
@@ -94,32 +94,37 @@ void update_table(WINDOW *win, connection_t *connections, int num_connections, i
     for (int i = 0; i < visible_rows && (start_row + i) < num_connections; i++) {
         mvwprintw(win, 3 + i, 2, "%s:%hu", connections[start_row + i].src_ip, connections[start_row + i].sport);
         mvwprintw(win, 3 + i, 32, "%s:%hu", connections[start_row + i].dst_ip, connections[start_row + i].dport);
-        // mvwprintw(win, 3 + i, 62, "%d", connections[start_row + i].bytes);
-        mvwprintw(win, 3 + i, 62, "n/a"); // del later
+        mvwprintw(win, 3 + i, 62, "%d B", connections[start_row + i].bytes);
+        // mvwprintw(win, 3 + i, 62, "n/a"); // del later
         mvwprintw(win, 3 + i, 77, "%s", connections[start_row + i].protocol);
-        // mvwprintw(win, 3 + i, 92, "%.2f", connections[start_row + i].rate);
-        mvwprintw(win, 3 + i, 92, "n/a"); // del later
+
+        double rate = (double)connections[start_row + i].bytes * 8 * 10 / 1024;
+        mvwprintw(win, 3 + i, 92, "%.2f Kbps", rate);
+        // mvwprintw(win, 3 + i, 92, "n/a"); // del later
     }
 
     wrefresh(win);
 }
 
-
-
-void draw_footer(WINDOW *footer_win, unsigned long long rx_bytes, unsigned long long tx_bytes, unsigned long long total, const char *interface_name) {
+void draw_footer(WINDOW *footer_win, unsigned long long rx_bytes, unsigned long long tx_bytes, unsigned long long total, const char *interface_name, const interface_rate rate) {
 
     char rx_str[32], tx_str[32], total_str[32];
+    char rx_rate[32], tx_rate[32];
 
-    format_bytes(rx_bytes, rx_str, sizeof(rx_str));
-    format_bytes(tx_bytes, tx_str, sizeof(tx_str));
-    format_bytes(total, total_str, sizeof(total_str));
+    static unsigned long long rx = 0;
+    static unsigned long long tx = 0;
+    static unsigned long long Total = 0;
 
-    werase(footer_win);
-    box(footer_win, 0, 0);
+    rx+=rx_bytes;
+    tx+=tx_bytes;
+    Total+=total;
 
-    // mvwprintw(footer_win, 1, 2, "TX: %d B", tx_bytes);
-    // mvwprintw(footer_win, 2, 2, "RX: %d B", rx_bytes);
-    // mvwprintw(footer_win, 3, 2, "Total: %d B", total);
+    format_bytes(rx, rx_str, sizeof(rx_str));
+    format_bytes(tx, tx_str, sizeof(tx_str));
+    format_bytes(Total, total_str, sizeof(total_str));
+
+    format_bytes(rate.rx_rate, rx_rate, sizeof(rx_rate));
+    format_bytes(rate.tx_rate, tx_rate, sizeof(tx_rate));
 
     werase(footer_win);
     box(footer_win, 0, 0);
@@ -127,6 +132,9 @@ void draw_footer(WINDOW *footer_win, unsigned long long rx_bytes, unsigned long 
     mvwprintw(footer_win, 1, 2, "RX: %s", rx_str);
     mvwprintw(footer_win, 2, 2, "TX: %s", tx_str);
     mvwprintw(footer_win, 3, 2, "Total: %s", total_str);
+
+    mvwprintw(footer_win, 1, 32, "%s/s", rx_rate); // Rx rate
+    mvwprintw(footer_win, 2, 32, "%s/s", tx_rate); // Rx rate
 
     mvwprintw(footer_win, 1, 70 ,"Interface:%s", interface_name);
     mvwprintw(footer_win, 3, 70, "PRESS Q TO EXIT...");
@@ -145,14 +153,14 @@ void verify_terminal_size(int height, int width){
 }
 
 void format_bytes(unsigned long long bytes, char *output, size_t output_size) {
-    const char *units[] = {"B", "kB", "MB", "GB", "TB"};
+    const char *units[] = {"B", "kB", "MB", "GB", "TB", "PB", "EB", "YB", "ZB"};
     int unit_index = 0;
-    double scaled_value = (double)bytes;
+    long double scaled_value = (long double)bytes;
 
-    while (scaled_value >= 1024 && unit_index < 4) {
+    while (scaled_value >= 1024 && unit_index < 9) {
         scaled_value /= 1024.0;
         unit_index++;
     }
 
-    snprintf(output, output_size, "%.2f %s", scaled_value, units[unit_index]);
+    snprintf(output, output_size, "%.2Lf %s", scaled_value, units[unit_index]);
 }
