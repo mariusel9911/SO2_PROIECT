@@ -66,14 +66,22 @@ int main(){
 
     interface_stat_t last_interface;
     interface_stat_t curr_interface;
-    interface_stat_t result;
-
-    interface_rate rate;
 
     int num_connections = 0, start_row = 0;
     int max_visible_rows = height - 10;
     int ch;
+    
+    static interface_rate displayed_rate;
 
+    // Rate Decay Hyperparameter
+    double alpha = 0.1;  
+
+    /* displayed_rx_rate_new​= α⋅inst_rate.rx_rate + (1−α)⋅displayed_rx_rate_old */
+
+    /* So when inst_rate.rx_rate is 0 because of no traffic, the displayed rate for RX becomes:
+        displayed_rx_rate_new = 0.3 × 0 + 0.7 × old_displayed_rate */
+
+       
 
     struct timespec req;
     req.tv_sec = 0;    
@@ -95,11 +103,14 @@ int main(){
         curr_interface.rx_bytes = interface->rx_bytes;
         curr_interface.tx_bytes = interface->tx_bytes;
 
-        result = calculate_interface_bytes(&curr_interface, &last_interface);
-        rate = calculate_interface_rate(&curr_interface, &last_interface, 1);
+        interface_stat_t result = calculate_interface_bytes(&curr_interface, &last_interface);
+        interface_rate inst_rate = calculate_interface_rate(&curr_interface, &last_interface, 0.1);
+
+        displayed_rate.rx_rate = alpha * inst_rate.rx_rate + (1.0 - alpha) * displayed_rate.rx_rate;
+        displayed_rate.tx_rate = alpha * inst_rate.tx_rate + (1.0 - alpha) * displayed_rate.tx_rate;
 
         update_table(table_win, connections, num_connections, start_row);
-        draw_footer(footer_win, result.rx_bytes, result.tx_bytes, result.total, selected_interface, rate);
+        draw_footer(footer_win, result.rx_bytes, result.tx_bytes, result.total, selected_interface, displayed_rate);
 
         memset(&connections, 0, MAX_CONNECTIONS * sizeof(connection_t));
 
