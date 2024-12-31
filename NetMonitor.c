@@ -86,6 +86,7 @@ int main(){
     struct timespec req;
     req.tv_sec = 0;    
     req.tv_nsec = 1e8L;
+    double sec_interval = 0.1;
 
     interface = get_interface_statistics(selected_interface);
     curr_interface.rx_bytes = interface->rx_bytes;
@@ -104,7 +105,7 @@ int main(){
         curr_interface.tx_bytes = interface->tx_bytes;
 
         interface_stat_t result = calculate_interface_bytes(&curr_interface, &last_interface);
-        interface_rate inst_rate = calculate_interface_rate(&curr_interface, &last_interface, 0.1);
+        interface_rate inst_rate = calculate_interface_rate(&curr_interface, &last_interface, sec_interval);
 
         displayed_rate.rx_rate = alpha * inst_rate.rx_rate + (1.0 - alpha) * displayed_rate.rx_rate;
         displayed_rate.tx_rate = alpha * inst_rate.tx_rate + (1.0 - alpha) * displayed_rate.tx_rate;
