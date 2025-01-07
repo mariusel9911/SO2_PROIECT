@@ -94,7 +94,7 @@ void update_table(WINDOW *win, connection_t *connections, int num_connections, i
     for (int i = 0; i < visible_rows && (start_row + i) < num_connections; i++) {
         mvwprintw(win, 3 + i, 2, "%s:%hu", connections[start_row + i].src_ip, connections[start_row + i].sport);
         mvwprintw(win, 3 + i, 32, "%s:%hu", connections[start_row + i].dst_ip, connections[start_row + i].dport);
-        mvwprintw(win, 3 + i, 62, "%d B", connections[start_row + i].bytes);
+        mvwprintw(win, 3 + i, 62, "%lld B", connections[start_row + i].bytes);
         // mvwprintw(win, 3 + i, 62, "n/a"); // del later
         mvwprintw(win, 3 + i, 77, "%s", connections[start_row + i].protocol);
 
