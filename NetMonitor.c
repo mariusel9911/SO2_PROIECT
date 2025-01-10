@@ -52,6 +52,8 @@ int main(){
         return 0;
     }
 
+    clear();
+    refresh();
 
     WINDOW *table_win = newwin(height - 7, 106, 2, 2);
     box(table_win, 0, 0);
@@ -80,8 +82,6 @@ int main(){
 
     /* So when inst_rate.rx_rate is 0 because of no traffic, the displayed rate for RX becomes:
         displayed_rx_rate_new = 0.3 × 0 + 0.7 × old_displayed_rate */
-
-       
 
     struct timespec req;
     req.tv_sec = 0;    
